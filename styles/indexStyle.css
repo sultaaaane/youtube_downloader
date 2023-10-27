@@ -1,0 +1,24 @@
+
+.rounded{
+    margin-top: 25%;
+}
+.cadreLink{
+background-color: rgba(0, 0, 0, 0.5);
+height: 200px;
+}
+.text-center{
+    color : #45474B;
+}
+.navbar{
+    height: 80px;
+       
+        
+}
+.navbar-brand{
+    font-family: 'Roboto', sans-serif;
+    font-weight: bold; 
+
+}
+.desc{
+    font-size:20px ;
+}
