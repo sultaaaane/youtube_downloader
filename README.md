@@ -1,12 +1,8 @@
-Here's the README in a single block for easy copying:
-
----
-
 ```markdown
 # YouTube Downloader
 
 A simple Python script to download videos or audio from YouTube. The program uses the `pytube` library to fetch video or audio streams and allows the user to choose between downloading either a video or an audio file. The audio files are automatically converted from MP4 to MP3 format using the `pydub` library.
-
+```
 ## Table of Contents
 
 - [Features](#features)
@@ -22,7 +18,6 @@ A simple Python script to download videos or audio from YouTube. The program use
 - Download YouTube videos in different resolutions.
 - Download YouTube audio and convert it to MP3 format.
 - Clean up original downloaded audio files after conversion.
-```
 
 ## Installation
 1. **Clone the repository:**
