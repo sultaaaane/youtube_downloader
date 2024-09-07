@@ -22,9 +22,9 @@ A simple Python script to download videos or audio from YouTube. The program use
 - Download YouTube videos in different resolutions.
 - Download YouTube audio and convert it to MP3 format.
 - Clean up original downloaded audio files after conversion.
+```
 
 ## Installation
-
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/yourusername/youtube-downloader.git
