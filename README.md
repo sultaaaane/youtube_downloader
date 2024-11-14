@@ -1,7 +1,7 @@
 ```markdown
 # YouTube Downloader
 
-A simple Python script to download videos or audio from YouTube. The program uses the `pytube` library to fetch video or audio streams and allows the user to choose between downloading either a video or an audio file. The audio files are automatically converted from MP4 to MP3 format using the `pydub` library.
+A simple Python script to download videos or audio from YouTube. The program uses the `pytubefix` library to fetch video or audio streams and allows the user to choose between downloading either a video or an audio file. The audio files are automatically converted from MP4 to MP3 format using the `pydub` library.
 ```
 ## Table of Contents
 
@@ -29,7 +29,7 @@ A simple Python script to download videos or audio from YouTube. The program use
 2. **Install required dependencies:**
    Make sure you have Python installed. Then, install the necessary libraries:
    ```bash
-   pip install pytube
+   pip install pytubefix
    pip install pydub
    ```
 
@@ -61,7 +61,7 @@ A simple Python script to download videos or audio from YouTube. The program use
 
 ## Dependencies
 
-- [pytube](https://pytube.io/): Python library for downloading YouTube videos.
+- [pytubefix](https://pytubefix.io/): Python library for downloading YouTube videos.
 - [pydub](https://pydub.com/): Python library for manipulating audio.
 - [ffmpeg](https://ffmpeg.org/): A complete, cross-platform solution to record, convert and stream audio and video.
 
