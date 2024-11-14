@@ -9,7 +9,6 @@ A simple Python script to download videos or audio from YouTube. The program use
 - [Installation](#installation)
 - [Usage](#usage)
 - [Dependencies](#dependencies)
-- [Configuration](#configuration)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -64,10 +63,6 @@ A simple Python script to download videos or audio from YouTube. The program use
 - [pytubefix](https://pytubefix.io/): Python library for downloading YouTube videos.
 - [pydub](https://pydub.com/): Python library for manipulating audio.
 - [ffmpeg](https://ffmpeg.org/): A complete, cross-platform solution to record, convert and stream audio and video.
-
-## Configuration
-
-- Modify the download paths in the script (`'/Users/moham/Videos'` for video and `'/Users/moham/Music'` for audio) to match your local system's directories.
 
 ## Contributing
 
