@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Youtube videos downloader</title>
+    <title>Youtube Videos Downloader</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles/indexStyle.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto&display=swap">
+    <link rel="stylesheet" href="styles/indexStyle.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -16,22 +16,22 @@
     <div class="container mt-5">
         <div class="row">
             <div class="col-md-6 offset-md-3">
-                <h2 class="text-center mb-4">Youtube videos downloader</h2>
-                <form>
+                <h2 class="text-center mb-4">YouTube Videos Downloader</h2>
+                <form id="downloadForm">
                     <div class="form-group">
-                        <label for="videoUrl">Lien du video</label>
-                        <input type="text" class="form-control" id="videoUrl" placeholder="Entrer le lien du video" required>
+                        <label for="videoUrl">Video Link</label>
+                        <input type="text" class="form-control" id="videoUrl" placeholder="Enter video link" required>
                     </div>
                     <div class="form-group">
-                        <label for="format">Selectionner Format</label>
+                        <label for="format">Select Format</label>
                         <select class="form-control" id="format">
                             <option value="mp4">MP4</option>
                             <option value="mp3">MP3</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="qualité">Selectionner Qualite</label>
-                        <select class="form-control" id="qualité">
+                        <label for="quality">Select Quality</label>
+                        <select class="form-control" id="quality">
                             <option value="144p">144p</option>
                             <option value="240p">240p</option>
                             <option value="360p">360p</option>
@@ -40,27 +40,18 @@
                             <option value="1080p">1080p</option>
                         </select>
                     </div>
-                    <button type="button" class="btn btn-primary">
+                    <button type="button" id="downloadBtn" class="btn btn-primary">
                         <i class="fas fa-download"></i> Download
                     </button>
                 </form>
+                <div id="loader" class="mt-3 text-center d-none">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p>Downloading... Please wait</p>
+                </div>
+                <div id="message" class="mt-3 text-center"></div>
             </div>
         </div>
     </div>
-    
-    <!-- SaveFrom Title and Description -->
-    <div class="container mt-5">
-        <div class="row">
-            <div class="col-md-12" style="text-align: center;">
-                <h1 class="desc_title">Comment utiliser le service SaveFrom pour télécharger des vidéos ?</h1>
-                <p class="desc">Le Téléchargeur SaveFrom est votre solution idéale pour télécharger instantanément et gratuitement des vidéos depuis YouTube. Oubliez les logiciels supplémentaires ou la nécessité de chercher d'autres plateformes en ligne pour vos téléchargements vidéo.</p>
-                <p class="desc">Avec SaveFrom, téléchargez facilement des clips vidéo, des YouTube Shorts, des séries TV, des vidéos de jeux ou des résumés sportifs en insérant simplement l'URL souhaitée et en appuyant sur le bouton de Téléchargement. Pour une expérience améliorée, profitez de notre extension Chrome dédiée, qui supporte le téléchargement de vidéos YouTube en qualité 1080p.</p>
-            </div>
-        </div>
-    </div>
-    
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="styles/indexScript.js"></script>
 </body>
 </html>
