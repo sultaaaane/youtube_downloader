@@ -3,7 +3,6 @@ document.getElementById("downloadBtn").addEventListener("click", function () {
     const format = document.getElementById("format").value;
     const quality = document.getElementById("quality").value;
 
-    // Regex to check if the URL is a valid YouTube link
     const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/;
 
     if (!videoUrl.trim()) {
@@ -19,11 +18,10 @@ document.getElementById("downloadBtn").addEventListener("click", function () {
     document.getElementById("loader").classList.remove("d-none");
     document.getElementById("message").innerHTML = "";
 
-    // Simulate downloading
     setTimeout(() => {
         document.getElementById("loader").classList.add("d-none");
         displayMessage("Download started successfully!", "success");
-    }, 2000); // Simulated delay
+    }, 2000);
 });
 
 function displayMessage(message, type) {
