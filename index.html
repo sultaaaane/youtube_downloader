@@ -28,6 +28,7 @@
                     <div class="form-group">
                         <label for="videoUrl">Video Link</label>
                         <input type="text" class="form-control" id="videoUrl" placeholder="Enter video link" required>
+                        <small id="mediaInfo" class="form-text text-muted"></small>
                     </div>
                     <div class="form-group">
                         <label for="format">Select Format</label>
@@ -38,13 +39,8 @@
                     </div>
                     <div class="form-group">
                         <label for="quality">Select Quality</label>
-                        <select class="form-control" id="quality">
-                            <option value="144p">144p</option>
-                            <option value="240p">240p</option>
-                            <option value="360p">360p</option>
-                            <option value="480p">480p</option>
-                            <option value="720p">720p</option>
-                            <option value="1080p">1080p</option>
+                        <select class="form-control" id="quality" disabled>
+                            <option value="">Enter a link to load qualities</option>
                         </select>
                     </div>
                     <button type="submit" id="downloadBtn" class="btn btn-primary">

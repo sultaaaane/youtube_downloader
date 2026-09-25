@@ -40,7 +40,7 @@ The web backend includes an FFmpeg binary through `imageio-ffmpeg`, so MP3 conve
    .venv/bin/uvicorn app:app --reload
    ```
 
-2. Open `http://127.0.0.1:8000`, choose a single video or an entire playlist, paste its YouTube URL, select the format and quality, and press Download. Playlist downloads are returned as a ZIP file; unavailable items are skipped and documented in `_download_errors.txt` inside the ZIP.
+2. Open `http://127.0.0.1:8000`, choose a single video or an entire playlist, and paste its YouTube URL. Available qualities are detected from the submitted media, including resolutions above 1080p. Select the format and quality, then press Download. Playlist downloads are returned as a ZIP file; unavailable items are skipped and documented in `_download_errors.txt` inside the ZIP. If a playlist item does not have the selected resolution, its best lower resolution is used.
 
 The API also exposes interactive documentation at `http://127.0.0.1:8000/docs`.
 
@@ -55,6 +55,7 @@ Run the original interactive script with:
 ## Dependencies
 
 - [pytubefix](https://pytubefix.io/): Python library for downloading YouTube videos.
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp): Download and metadata engine used by the web backend.
 - [pydub](https://pydub.com/): Python library for manipulating audio.
 - [ffmpeg](https://ffmpeg.org/): A complete, cross-platform solution to record, convert and stream audio and video.
 - [FastAPI](https://fastapi.tiangolo.com/): Web API framework used by the browser interface.

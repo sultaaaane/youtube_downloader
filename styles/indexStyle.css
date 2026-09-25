@@ -31,3 +31,7 @@ h2 {
     width: 3rem;
     height: 3rem;
 }
+
+#mediaInfo {
+    min-height: 1.25rem;
+}

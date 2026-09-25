@@ -1,8 +1,8 @@
 import shutil
-import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import parse_qs, urlparse
 
 from fastapi import FastAPI, HTTPException, Query
@@ -10,8 +10,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from imageio_ffmpeg import get_ffmpeg_exe
 from pydantic import BaseModel
-from pytubefix import Playlist, YouTube
 from starlette.background import BackgroundTask
+from yt_dlp import YoutubeDL
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -75,16 +75,85 @@ def require_ffmpeg() -> str:
     return str(executable)
 
 
-def run_ffmpeg(command: list[str]) -> None:
-    try:
-        subprocess.run(command, check=True, capture_output=True, text=True)
-    except subprocess.CalledProcessError as error:
-        message = error.stderr.strip().splitlines()[-1] if error.stderr else str(error)
-        raise HTTPException(status_code=500, detail=f"FFmpeg failed: {message}") from error
+def ytdlp_options() -> dict[str, Any]:
+    options: dict[str, Any] = {
+        "quiet": True,
+        "noprogress": True,
+        "no_warnings": True,
+        "socket_timeout": 30,
+        "retries": 3,
+        "extractor_retries": 3,
+    }
+    node = shutil.which("node")
+    if node:
+        options["js_runtimes"] = {"node": {"path": node}}
+    return options
+
+
+def extract_video(url: str) -> dict[str, Any]:
+    options = {
+        **ytdlp_options(),
+        "skip_download": True,
+        "noplaylist": True,
+    }
+    with YoutubeDL(options) as downloader:
+        info = downloader.extract_info(url, download=False)
+    if not info:
+        raise HTTPException(status_code=404, detail="No video information was found.")
+    return info
+
+
+def extract_playlist(url: str) -> tuple[str, list[dict[str, str]]]:
+    options = {
+        **ytdlp_options(),
+        "skip_download": True,
+        "extract_flat": "in_playlist",
+    }
+    with YoutubeDL(options) as downloader:
+        info = downloader.extract_info(url, download=False)
+
+    if not info or not info.get("entries"):
+        raise HTTPException(status_code=404, detail="No videos were found in this playlist.")
+
+    entries: list[dict[str, str]] = []
+    for entry in info["entries"]:
+        if not entry:
+            continue
+        video_url = entry.get("webpage_url") or entry.get("url")
+        if video_url and not video_url.startswith(("http://", "https://")):
+            video_url = f"https://www.youtube.com/watch?v={video_url}"
+        if video_url:
+            entries.append(
+                {
+                    "url": video_url,
+                    "title": entry.get("title") or entry.get("id") or "video",
+                }
+            )
+
+    if not entries:
+        raise HTTPException(status_code=404, detail="No videos were found in this playlist.")
+    return info.get("title") or "YouTube Playlist", entries
+
+
+def available_qualities(info: dict[str, Any]) -> list[str]:
+    heights = {
+        int(media_format["height"])
+        for media_format in info.get("formats", [])
+        if media_format.get("vcodec") not in {None, "none"}
+        and isinstance(media_format.get("height"), (int, float))
+        and media_format["height"] > 0
+    }
+    return [f"{height}p" for height in sorted(heights)]
+
+
+def requested_height(quality: str) -> int:
+    if not quality.endswith("p") or not quality[:-1].isdigit():
+        raise HTTPException(status_code=400, detail="Select a valid video quality.")
+    return int(quality[:-1])
 
 
 def download_media(
-    video: YouTube,
+    video_url: str,
     output_dir: Path,
     output_stem: str,
     file_format: Literal["mp4", "mp3"],
@@ -92,100 +161,60 @@ def download_media(
 ) -> tuple[Path, str]:
     """Download one video and return its path and response media type."""
     output_dir.mkdir(parents=True, exist_ok=True)
+    ffmpeg = require_ffmpeg()
+    options = {
+        **ytdlp_options(),
+        "noplaylist": True,
+        "outtmpl": str(output_dir / f"{output_stem}.%(ext)s"),
+        "ffmpeg_location": ffmpeg,
+        "overwrites": True,
+    }
 
     if file_format == "mp3":
-        ffmpeg = require_ffmpeg()
-        stream = video.streams.filter(only_audio=True).order_by("abr").desc().first()
-        if stream is None:
-            raise HTTPException(status_code=404, detail="No audio stream was found.")
-
-        source = Path(
-            stream.download(output_path=output_dir, filename=f".{output_stem}-audio-source.mp4")
+        options.update(
+            {
+                "format": "bestaudio/best",
+                "postprocessors": [
+                    {
+                        "key": "FFmpegExtractAudio",
+                        "preferredcodec": "mp3",
+                        "preferredquality": "0",
+                    }
+                ],
+            }
         )
-        output = output_dir / f"{output_stem}.mp3"
-        run_ffmpeg(
-            [
-                ffmpeg,
-                "-y",
-                "-i",
-                str(source),
-                "-vn",
-                "-codec:a",
-                "libmp3lame",
-                "-q:a",
-                "2",
-                str(output),
-            ]
+        extension = "mp3"
+        media_type = "audio/mpeg"
+    else:
+        height = requested_height(quality)
+        options.update(
+            {
+                "format": (
+                    f"bestvideo[height<={height}]+bestaudio[ext=m4a]/"
+                    f"bestvideo[height<={height}]+bestaudio/"
+                    f"best[height<={height}]/best"
+                ),
+                "merge_output_format": "mp4",
+            }
         )
-        source.unlink(missing_ok=True)
-        return output, "audio/mpeg"
+        extension = "mp4"
+        media_type = "video/mp4"
 
-    progressive = (
-        video.streams.filter(
-            progressive=True,
-            mime_type="video/mp4",
-            res=quality,
-        )
-        .order_by("fps")
-        .desc()
-        .first()
-    )
+    with YoutubeDL(options) as downloader:
+        downloader.extract_info(video_url, download=True)
 
-    if progressive is not None:
-        output = Path(
-            progressive.download(output_path=output_dir, filename=f"{output_stem}.mp4")
-        )
-        return output, "video/mp4"
+    expected_output = output_dir / f"{output_stem}.{extension}"
+    if expected_output.is_file():
+        return expected_output, media_type
 
-    video_stream = (
-        video.streams.filter(
-            only_video=True,
-            mime_type="video/mp4",
-            res=quality,
-        )
-        .order_by("fps")
-        .desc()
-        .first()
-    )
-    if video_stream is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"The {quality} MP4 quality is unavailable for this video.",
-        )
-
-    ffmpeg = require_ffmpeg()
-    audio_stream = (
-        video.streams.filter(only_audio=True, mime_type="audio/mp4")
-        .order_by("abr")
-        .desc()
-        .first()
-    )
-    if audio_stream is None:
-        raise HTTPException(status_code=404, detail="No compatible audio stream was found.")
-
-    video_path = Path(
-        video_stream.download(output_path=output_dir, filename=f".{output_stem}-video-source.mp4")
-    )
-    audio_path = Path(
-        audio_stream.download(output_path=output_dir, filename=f".{output_stem}-audio-source.mp4")
-    )
-    output = output_dir / f"{output_stem}.mp4"
-    run_ffmpeg(
-        [
-            ffmpeg,
-            "-y",
-            "-i",
-            str(video_path),
-            "-i",
-            str(audio_path),
-            "-c",
-            "copy",
-            str(output),
-        ]
-    )
-    video_path.unlink(missing_ok=True)
-    audio_path.unlink(missing_ok=True)
-    return output, "video/mp4"
+    candidates = [
+        path
+        for path in output_dir.glob(f"{output_stem}.*")
+        if path.is_file() and path.suffix not in {".part", ".ytdl"}
+    ]
+    if not candidates:
+        raise HTTPException(status_code=500, detail="The downloaded file could not be located.")
+    return candidates[0], media_type
 
 
 @app.get("/")
@@ -202,21 +231,13 @@ def health() -> dict[str, str]:
 def video_info(url: str = Query(...)) -> dict:
     url = validate_youtube_url(url)
     try:
-        video = YouTube(url)
-        resolutions = {
-            stream.resolution
-            for stream in video.streams.filter(mime_type="video/mp4")
-            if stream.resolution
-        }
-        ordered_resolutions = sorted(
-            resolutions,
-            key=lambda resolution: int(resolution.removesuffix("p")),
-        )
+        info = extract_video(url)
         return {
-            "title": video.title,
-            "length": video.length,
-            "thumbnail": video.thumbnail_url,
-            "qualities": ordered_resolutions,
+            "title": info.get("title") or "YouTube Video",
+            "length": info.get("duration"),
+            "thumbnail": info.get("thumbnail"),
+            "qualities": available_qualities(info),
+            "count": 1,
         }
     except HTTPException:
         raise
@@ -227,16 +248,65 @@ def video_info(url: str = Query(...)) -> dict:
         ) from error
 
 
+@app.get("/api/media-info")
+def media_info(
+    url: str = Query(...),
+    download_type: Literal["video", "playlist"] = Query("video"),
+) -> dict:
+    if download_type == "video":
+        return video_info(url)
+
+    url = validate_playlist_url(url)
+    try:
+        title, entries = extract_playlist(url)
+        qualities: set[str] = set()
+        failed_items = 0
+
+        with ThreadPoolExecutor(max_workers=min(4, len(entries))) as executor:
+            futures = {
+                executor.submit(extract_video, entry["url"]): entry
+                for entry in entries
+            }
+            for future in as_completed(futures):
+                try:
+                    qualities.update(available_qualities(future.result()))
+                except Exception:
+                    failed_items += 1
+
+        ordered_qualities = sorted(
+            qualities,
+            key=lambda resolution: int(resolution.removesuffix("p")),
+        )
+        if not ordered_qualities:
+            raise HTTPException(
+                status_code=502,
+                detail="Could not determine the available qualities for this playlist.",
+            )
+        return {
+            "title": title,
+            "count": len(entries),
+            "qualities": ordered_qualities,
+            "metadata_failures": failed_items,
+        }
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Could not read that YouTube playlist: {error}",
+        ) from error
+
+
 @app.post("/api/download")
 def download(request: DownloadRequest) -> FileResponse:
     url = validate_youtube_url(request.url)
     work_dir = Path(tempfile.mkdtemp(prefix="youtube-downloader-"))
 
     try:
-        video = YouTube(url)
-        title = safe_filename(video.title)
+        info = extract_video(url)
+        title = safe_filename(info.get("title") or "download")
         output, media_type = download_media(
-            video,
+            url,
             work_dir,
             title,
             request.format,
@@ -270,22 +340,17 @@ def download_playlist(request: DownloadRequest) -> FileResponse:
     staging_dir.mkdir()
 
     try:
-        playlist = Playlist(url)
-        video_urls = list(playlist.video_urls)
-        if not video_urls:
-            raise HTTPException(status_code=404, detail="No videos were found in this playlist.")
-
-        playlist_title = safe_filename(playlist.title or "YouTube Playlist")
+        raw_playlist_title, entries = extract_playlist(url)
+        playlist_title = safe_filename(raw_playlist_title)
         errors: list[str] = []
         downloaded = 0
 
-        for position, video_url in enumerate(video_urls, start=1):
+        for position, entry in enumerate(entries, start=1):
             item_dir = staging_dir / str(position)
             try:
-                video = YouTube(video_url)
-                numbered_title = f"{position:03d} - {safe_filename(video.title)}"
+                numbered_title = f"{position:03d} - {safe_filename(entry['title'])}"
                 item_path, _ = download_media(
-                    video,
+                    entry["url"],
                     item_dir,
                     numbered_title,
                     request.format,
@@ -295,7 +360,7 @@ def download_playlist(request: DownloadRequest) -> FileResponse:
                 downloaded += 1
             except Exception as error:
                 detail = error.detail if isinstance(error, HTTPException) else str(error)
-                errors.append(f"{position:03d} | {video_url} | {detail}")
+                errors.append(f"{position:03d} | {entry['url']} | {detail}")
             finally:
                 shutil.rmtree(item_dir, ignore_errors=True)
 

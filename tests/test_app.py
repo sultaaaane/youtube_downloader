@@ -6,7 +6,12 @@ from unittest.mock import patch
 
 from fastapi import HTTPException
 
-from app import DownloadRequest, download_playlist, validate_playlist_url
+from app import (
+    DownloadRequest,
+    available_qualities,
+    download_playlist,
+    validate_playlist_url,
+)
 
 
 class PlaylistDownloadTests(TestCase):
@@ -17,21 +22,18 @@ class PlaylistDownloadTests(TestCase):
         self.assertEqual(context.exception.status_code, 400)
 
     def test_playlist_is_packaged_as_numbered_zip(self) -> None:
-        class FakePlaylist:
-            title = "Demo Playlist"
-            video_urls = ["https://youtu.be/one", "https://youtu.be/two"]
+        playlist = (
+            "Demo Playlist",
+            [
+                {"url": "https://youtu.be/one", "title": "First"},
+                {"url": "https://youtu.be/two", "title": "Second"},
+            ],
+        )
 
-            def __init__(self, _url: str) -> None:
-                pass
-
-        class FakeVideo:
-            def __init__(self, url: str) -> None:
-                self.title = "First" if url.endswith("one") else "Second"
-
-        def fake_download_media(video, output_dir, output_stem, file_format, quality):
+        def fake_download_media(video_url, output_dir, output_stem, file_format, quality):
             output_dir.mkdir(parents=True, exist_ok=True)
             output = output_dir / f"{output_stem}.{file_format}"
-            output.write_bytes(video.title.encode("utf-8"))
+            output.write_bytes(video_url.encode("utf-8"))
             return output, "video/mp4"
 
         request = DownloadRequest(
@@ -41,8 +43,7 @@ class PlaylistDownloadTests(TestCase):
         )
 
         with (
-            patch("app.Playlist", FakePlaylist),
-            patch("app.YouTube", FakeVideo),
+            patch("app.extract_playlist", return_value=playlist),
             patch("app.download_media", side_effect=fake_download_media),
         ):
             response = download_playlist(request)
@@ -56,3 +57,16 @@ class PlaylistDownloadTests(TestCase):
                 )
         finally:
             asyncio.run(response.background())
+
+    def test_available_qualities_are_dynamic_and_sorted(self) -> None:
+        info = {
+            "formats": [
+                {"height": 2160, "vcodec": "av01"},
+                {"height": 720, "vcodec": "avc1"},
+                {"height": 1080, "vcodec": "vp9"},
+                {"height": None, "vcodec": "none"},
+                {"height": 2160, "vcodec": "vp9"},
+            ]
+        }
+
+        self.assertEqual(available_qualities(info), ["720p", "1080p", "2160p"])
