@@ -19,6 +19,13 @@
                 <h2 class="text-center mb-4">YouTube Videos Downloader</h2>
                 <form id="downloadForm">
                     <div class="form-group">
+                        <label for="downloadType">Download Type</label>
+                        <select class="form-control" id="downloadType">
+                            <option value="video">Single Video</option>
+                            <option value="playlist">Entire Playlist (ZIP)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="videoUrl">Video Link</label>
                         <input type="text" class="form-control" id="videoUrl" placeholder="Enter video link" required>
                     </div>
@@ -40,13 +47,13 @@
                             <option value="1080p">1080p</option>
                         </select>
                     </div>
-                    <button type="button" id="downloadBtn" class="btn btn-primary">
+                    <button type="submit" id="downloadBtn" class="btn btn-primary">
                         <i class="fas fa-download"></i> Download
                     </button>
                 </form>
                 <div id="loader" class="mt-3 text-center d-none">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <p>Downloading... Please wait</p>
+                    <p>Preparing your download... This can take a moment.</p>
                 </div>
                 <div id="message" class="mt-3 text-center"></div>
             </div>

@@ -25,44 +25,39 @@ A simple Python script to download videos or audio from YouTube. The program use
    cd youtube-downloader
    ```
 
-2. **Install required dependencies:**
-   Make sure you have Python installed. Then, install the necessary libraries:
+2. **Create an environment and install the dependencies:**
    ```bash
-   pip install pytubefix
-   pip install pydub
+   python3 -m venv .venv
+   .venv/bin/pip install -r requirements.txt
    ```
 
-3. **Install `ffmpeg`:**
-   The `pydub` library requires `ffmpeg` to be installed on your system. Download and install it from [ffmpeg.org](https://ffmpeg.org/download.html).
+The web backend includes an FFmpeg binary through `imageio-ffmpeg`, so MP3 conversion and high-resolution MP4 merging work without a separate system install. The original command-line script still requires a system FFmpeg installation.
 
-## Usage
+## Web app usage
 
-1. **Run the script:**
-   Execute the Python script:
+1. **Run the FastAPI server:**
    ```bash
-   python downloader.py
+   .venv/bin/uvicorn app:app --reload
    ```
 
-2. **Input the YouTube link:**
-   Paste the YouTube link when prompted.
+2. Open `http://127.0.0.1:8000`, choose a single video or an entire playlist, paste its YouTube URL, select the format and quality, and press Download. Playlist downloads are returned as a ZIP file; unavailable items are skipped and documented in `_download_errors.txt` inside the ZIP.
 
-3. **Choose the download option:**
-   - Enter `1` for video download.
-   - Enter `2` for audio download.
+The API also exposes interactive documentation at `http://127.0.0.1:8000/docs`.
 
-4. **Select desired quality:**
-   - For video, select the desired resolution.
-   - For audio, choose the desired bitrate.
+## Command-line usage
 
-5. **Follow on-screen instructions:**
-   - Provide a custom filename for the audio download.
-   - The audio will be converted to MP3, and the original file will be removed after conversion.
+Run the original interactive script with:
+
+```bash
+.venv/bin/python youtube_downloader.py
+```
 
 ## Dependencies
 
 - [pytubefix](https://pytubefix.io/): Python library for downloading YouTube videos.
 - [pydub](https://pydub.com/): Python library for manipulating audio.
 - [ffmpeg](https://ffmpeg.org/): A complete, cross-platform solution to record, convert and stream audio and video.
+- [FastAPI](https://fastapi.tiangolo.com/): Web API framework used by the browser interface.
 
 ## Contributing
 
