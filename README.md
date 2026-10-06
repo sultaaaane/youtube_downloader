@@ -21,7 +21,7 @@ A simple Python script to download videos or audio from YouTube. The program use
 ## Installation
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/youtube-downloader.git
+   git clone https://github.com/sultaaaane/youtube-downloader.git
    cd youtube-downloader
    ```
 
